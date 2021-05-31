@@ -96,14 +96,14 @@ class Person(object):
             if dist != 0:
                 total_force += self.gravity_strength * to_well / dist**3
         
-        '''
+        
         # Avoid walls
         wall_force = np.zeros(2)
         for i in range(2):
             # When i=0, to_lower and to_upper mean the horizontal distances
             # When i=1, to_lower and to_upper mean the vertical distances
             to_lower = point[i] - self.dl_bound[i]
-            to_upper = point[i] - self.ur_bound[i]
+            to_upper = self.ur_bound[i] - point[i]
             
             # Bounce
             if to_lower < 0:
@@ -117,8 +117,8 @@ class Person(object):
             wall_force += max((-1 / self.wall_buffer + 1 / to_lower), 0)
             wall_force -= max((-1 / self.wall_buffer + 1 / to_upper), 0)
         total_force += wall_force
-        '''
-        '''
+        
+        
         # Potentially avoid neighbors (Optional)
         if self.social_distance_factor > 0:
             repulsion_force = np.zeros(2)
@@ -132,7 +132,7 @@ class Person(object):
                     repulsion_force -= self.social_distance_factor * to_repulsion_point / dist**3
 
             total_force += repulsion_force
-        '''
+        
         # Apply force
         self.velocity += total_force * dt
 
