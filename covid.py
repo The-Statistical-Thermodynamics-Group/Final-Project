@@ -7,7 +7,7 @@ from space_ops import *
 class Person(object):
     PERSON_CONFIG = {
     "infection_radius": 0.5,
-    "probability_of_infection": 1,
+    "probability_of_infection": 0.7,
     "counted_as_infector": False,
     "incubation_period": 1.0,
     "infection_duration": 3.0,
@@ -264,7 +264,9 @@ class RunSimpleSimulation(SIRSimulation):
         self.effect_reproduction_num = 0
         self.particles = dict()
         self.setup()
-        self.ani = animation.FuncAnimation(self.fig, func= self.run_until_zero_infection, interval = 100)
+        self.anim = animation.FuncAnimation(self.fig, func= self.run_until_zero_infection, interval = 100)
+        self.stack_anim = animation.FuncAnimation(self.stack_fig, func= self.run_until_zero_infection(), inteval = 100)
+        
         
     def setup(self):
         for city in range(self.n_cities):
@@ -281,21 +283,63 @@ class RunSimpleSimulation(SIRSimulation):
                 if person.status is "R":
                     self.particles[city+1]["R"] = np.append(self.particles[city+1]["R"],[person.point],0)
         
+        # Scatter plot
         city_plot = dict()
         group_plot = dict()
-        fig = plt.figure(figsize=(5,7))
+        fig = plt.figure(figsize=(8,8))
         for city in range(self.n_cities):
-            city_plot[city+1] = plt.subplot(3,2,city+1)
+            city_plot[city+1] = plt.subplot(4,2,city+1)
+            city_plot[city+1].set_xlim(left=0,right=self.box_size)
+            city_plot[city+1].set_ylim(bottom=0,top=self.box_size)
             group_plot[city+1] = dict()
             group_plot[city+1]["S"] = city_plot[city+1].scatter(self.particles[city+1]["S"][:,0],self.particles[city+1]["S"][:,1], color = "blue")
             group_plot[city+1]["I"] = city_plot[city+1].scatter(self.particles[city+1]["I"][:,0],self.particles[city+1]["I"][:,1], color = "red")
             group_plot[city+1]["R"] = city_plot[city+1].scatter(self.particles[city+1]["R"][:,0],self.particles[city+1]["R"][:,1], color = "grey")
-            
-        self.fig = fig
+        
+        # Show the reproduction number
+        tex = plt.subplot(4,2,7)
+        plt.tick_params(length=0,labelsize=0)
+        Tex = tex.annotate("R_label:",xy=(0.1,0.45),fontsize=20)
+        R_label = tex.annotate(self.effect_reproduction_num,xy=(0.6,0.45),fontsize=20)
+        
+        # Show the CONFIG info
+        info = plt.subplot(4,2,8)
+        plt.tick_params(length=0,labelsize=0)
+        # info of the infection duration
+        info.annotate("infection duration:",xy=(0.03,0.8),fontsize=13)
+        info.annotate(self.infection_duration,xy=(0.7,0.8),fontsize=13)
+        # info of the social distance factor
+        info.annotate("social distance \nfactor:",xy=(0.03,0.4),fontsize=13)
+        info.annotate(self.social_distance_factor,xy=(0.7,0.4),fontsize=13)
+        # info of the travel rate
+        info.annotate("travel rate:",xy=(0.03,0.16),fontsize=13)
+        info.annotate(self.travel_rate,xy=(0.7,0.16),fontsize=13)
 
+        
+        # Initiate the stacked area plot
+        self.time_list = []
+        self.num_S_list = np.zeros(0)
+        self.num_I_list = np.zeros(0)
+        self.num_R_list = np.zeros(0)
+        stack_fig = plt.figure(figsize=(8,5))
+        # time axis (x axis)
+        self.time_list.append(self.time)
+        # y axis (number of people)
+        self.num_S_list = np.append(self.num_S_list, self.get_status_count()[0])
+        self.num_I_list = np.append(self.num_I_list, self.get_status_count()[1])
+        self.num_R_list = np.append(self.num_R_list, self.get_status_count()[2])
+        self.num_of_individuals = np.vstack([self.num_S_list, self.num_I_list, self.num_R_list])
+        plt.stackplot(x= self.time_list, y1= self.num_S_list, y2= self.num_I_list, y3= self.num_R_list,
+        labels= ["Susceptible", "Infectious", "Removed"], colors= ["blue", "red", "grey"], baseline='zero')
+        
+
+        self.R_label = R_label
+        self.fig = fig
         self.city_plot = city_plot
         self.group_plot = group_plot
-        return self.fig, self.city_plot, self.group_plot
+        
+        self.stack_fig = stack_fig
+        return self.fig, self.city_plot, self.group_plot, self.R_label
         
     
     def run_until_zero_infection(self, frame):
@@ -314,26 +358,36 @@ class RunSimpleSimulation(SIRSimulation):
                     self.particles[city+1]["I"] = np.append(self.particles[city+1]["I"],[person.point],0)
                 if person.status is "R":
                     self.particles[city+1]["R"] = np.append(self.particles[city+1]["R"],[person.point],0)
-        
+            
             print("status[S, I, R]", self.get_status_count())
-            self.update_statuses()
-        
-        '''
-        # If number of infected people is zero, stop the simulation.
-        elif self.get_status_count()[1] == 0:
-            break
-        '''
-        
+            
         for city in range(self.n_cities):
             self.group_plot[city+1]["S"].set_offsets(self.particles[city+1]["S"])
             self.group_plot[city+1]["I"].set_offsets(self.particles[city+1]["I"])
             self.group_plot[city+1]["R"].set_offsets(self.particles[city+1]["R"])
         
+        self.add_R_label()
+        self.R_label.set_text(round(self.effect_reproduction_num,1))
+
+
+        # Update stacked area plot
+        # time axis (x axis)
+        self.time_list.append(self.time)
+        # y axis (number of people)
+        self.num_S_list = np.append(self.num_S_list, self.get_status_count()[0])
+        self.num_I_list = np.append(self.num_I_list, self.get_status_count()[1])
+        self.num_R_list = np.append(self.num_R_list, self.get_status_count()[2])
+        self.num_of_individuals = np.vstack([self.num_S_list, self.num_I_list, self.num_R_list])
+
+        
+        # If number of infected people is zero, stop the simulation.
+        if self.get_status_count()[1] == 0:
+            self.anim.event_source.stop()
+
+        self.update_statuses()
+        self.add_R_label()
+
         return self.group_plot,
-    
-    
-    def show(self):
-        plt.show()
     
     
     def add_R_label(self):
@@ -347,7 +401,7 @@ class RunSimpleSimulation(SIRSimulation):
         for city in self.boxes:
             for person in city:
                 if person.status == "I":
-                    prop = (person.time - person.infection_start_time) / person.infection_duration
+                    prop = (person.time - person.getting_infected_time) / person.infection_duration
                     # When time passes beyond the interval of 0.1, update the "reproduction number."
                     if prop > 0.1:
                         all_R0_values.append(person.num_infected / prop)
@@ -355,6 +409,11 @@ class RunSimpleSimulation(SIRSimulation):
         if len(all_R0_values) > 0:
             # The "effect_reproduction_num"  is for R_label.
             self.effect_reproduction_num = np.mean(all_R0_values)
+    
+
+    def show(self):
+        plt.show()
+            
 
 sim = RunSimpleSimulation()
 sim.show()
