@@ -10,7 +10,7 @@ class Person(object):
     "probability_of_infection": 0.5,
     "counted_as_infector": False,
     "incubation_period": 1.04,
-    "infection_duration": 4.0,
+    "infection_duration": 4.2,
     "dl_bound": [0, 0],
     "ur_bound": [10, 10],
     "wander_step_size": 1,
@@ -160,11 +160,13 @@ class SIRSimulation(Person):
 	"box_size":10, #the size of each city(box)
 	"travel_rate":0.3, #decide how much people in the city will travel
     "trigger_case":30,
-    "num_of_total_infected":0,
     "percentage_of_no_symptom": 0.2,
+    "quarantine_mode": False,
     "percentage_of_quarantine": 0.7,
-    "quarantine_mode": False
+    "num_of_total_infected":0,
 	}
+
+
 	def __init__(self): #need to figure out how to update the status
             super().__init__()
             self.n_cities=self.CONFIG["n_cities"]
