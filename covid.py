@@ -8,8 +8,9 @@ class Person(object):
     PERSON_CONFIG = {
     "infection_radius": 0.5,
     "probability_of_infection": 0.5,
+    "counted_as_infector": False,
     "incubation_period": 1.04,
-    "infection_duration": 4.2,
+    "infection_duration": 4.0,
     "dl_bound": [0, 0],
     "ur_bound": [10, 10],
     "wander_step_size": 1,
@@ -20,7 +21,7 @@ class Person(object):
     "probability_of_social_distancing": 0.7,
     "n_repulsion_points":10,
     "wall_buffer": 1,
-    "max_speed": 1.0,
+    "max_speed": 1,
     "dt": 0.1
     }
     
@@ -36,6 +37,7 @@ class Person(object):
         
         self.infection_radius = self.PERSON_CONFIG["infection_radius"]
         self.probability_of_infection = self.PERSON_CONFIG["probability_of_infection"]
+        self.counted_as_infector = self.PERSON_CONFIG["counted_as_infector"]
         self.incubation_period = self.PERSON_CONFIG["incubation_period"]
         self.infection_duration = self.PERSON_CONFIG["infection_duration"]
         self.dl_bound = self.PERSON_CONFIG["dl_bound"]
@@ -156,26 +158,26 @@ class SIRSimulation(Person):
 	"col_cities":3, #define the row and column of the cities
 	"city_pop":100, #the population in each city
 	"box_size":10, #the size of each city(box)
-	"travel_rate": 0.3, #decide how much people in the city will travel
+	"travel_rate":0.3, #decide how much people in the city will travel
     "trigger_case":30,
-    "percentage_of_no_symptom": 0.3,
-    "quarantine_mode": True,
-    "probability_of_quarantine": 0.1,
-    "num_of_total_infected":0
+    "num_of_total_infected":0,
+    "percentage_of_no_symptom": 0.2,
+    "percentage_of_quarantine": 0.7,
+    "quarantine_mode": False
 	}
-
-
 	def __init__(self): #need to figure out how to update the status
             super().__init__()
-            self.n_cities = self.CONFIG["n_cities"]
-            self.city_pop = self.CONFIG["city_pop"]
-            self.box_size = self.CONFIG["box_size"]
-            self.travel_rate = self.CONFIG["travel_rate"]
+            self.n_cities=self.CONFIG["n_cities"]
+            self.row_cities=self.CONFIG["row_cities"]
+            self.col_cities=self.CONFIG["col_cities"]
+            self.city_pop=self.CONFIG["city_pop"]
+            self.box_size=self.CONFIG["box_size"]
+            self.travel_rate=self.CONFIG["travel_rate"]
             self.trigger_case = self.CONFIG["trigger_case"]
-            self.percentage_of_no_symptom = self.CONFIG["percentage_of_no_symptom"]
-            self.quarantine_mode = self.CONFIG["quarantine_mode"]
-            self.probability_of_quarantine = self.CONFIG["probability_of_quarantine"]
             self.num_of_total_infected = self.CONFIG["num_of_total_infected"]
+            self.percentage_of_no_symptom = self.CONFIG["percentage_of_no_symptom"]
+            self.percentage_of_quarantine = self.CONFIG["percentage_of_quarantine"]
+            self.quarantine_mode = self.CONFIG["quarantine_mode"]
             
             self.add_box()
             self.add_people()
@@ -245,7 +247,7 @@ class SIRSimulation(Person):
                 for person in city:
                     if person.time - person.getting_infected_time > self.incubation_period:
                         if person.status is "I" and self.quarantine_mode is True:
-                            if random.random() < self.probability_of_quarantine:
+                            if random.random() < self.percentage_of_quarantine:
                                 self.quarantine_zone.append(person)
                                 del city[city.index(person)]
             
@@ -303,11 +305,16 @@ class RunSimpleSimulation(SIRSimulation):
         self.last_update_time = 0
         self.effect_reproduction_num = 0
         self.particles = dict()
+        self.real_world_time_list = []
+        self.percentage_S_list = []
+        self.percentage_I_list = []
+        self.percentage_R_list = []
+        self.percentage_accum_cases_list = []
+
         self.setup()
         self.anim = animation.FuncAnimation(self.fig, func= self.run_until_zero_infection, interval = 100)
-        '''
-        self.stack_anim = animation.FuncAnimation(self.stack_fig, func= self.run_until_zero_infection(), inteval = 100)
-        '''
+        self.plot_anim = animation.FuncAnimation(self.plot_fig, func= self.run_until_zero_infection, interval = 100)
+        
         
     def setup(self):
         for city in range(self.n_cities):
@@ -361,16 +368,20 @@ class RunSimpleSimulation(SIRSimulation):
             self.quarantine_scatter["I"] = quarantine_plot.scatter(self.Q_particles["I"][:,0], self.Q_particles["I"][:,1], color = "red")
             self.quarantine_scatter["R"] = quarantine_plot.scatter(self.Q_particles["R"][:,0], self.Q_particles["R"][:,1], color = "grey")
         
-        # Show the reproduction number
+       # Show the reproduction number
         tex = plt.subplot(5,3,10)
         plt.tick_params(length=0,labelsize=0)
-        Tex = tex.annotate("R_label:",xy=(0.1,0.65),fontsize=17)
-        R_label = tex.annotate(self.effect_reproduction_num,xy=(0.65,0.65),fontsize=17)
         
-        Time = tex.annotate("Time:",xy=(0.1,0.25),fontsize=17)
-        time_label = tex.annotate(self.boxes[1][1].time,xy=(0.65,0.25),fontsize=17)
+        tex.annotate("Time in code:",xy=(0.1,0.76),fontsize=17)
+        time_label = tex.annotate(self.boxes[1][1].time,xy=(0.8,0.76),fontsize=17)
         
-        self.totol_people = self.get_status_count()[0]+self.get_status_count()[1]+self.get_status_count()[2]
+        tex.annotate("Days:",xy=(0.1,0.5),fontsize=17)
+        Days = tex.annotate(int(self.boxes[1][1].time/0.2),xy=(0.8,0.5),fontsize=17)
+        
+        tex.annotate("R:",xy=(0.1,0.16),fontsize=17)
+        R_label = tex.annotate(self.effect_reproduction_num,xy=(0.8,0.16),fontsize=17)
+        
+        self.totol_people = self.get_status_count()[0]+self.get_status_count()[1]+self.get_status_count()[3]
         group_area = plt.subplot(5,3,11)
         plt.tick_params(length=0,labelsize=0)
         group_area.annotate("Susceptible:",xy=(0.1,0.85),fontsize=10)
@@ -402,75 +413,93 @@ class RunSimpleSimulation(SIRSimulation):
         # Show the CONFIG info
         info = plt.subplot(5,3,13)
         plt.tick_params(length=0,labelsize=0)
+        #info of infection radius
+        info.annotate("#Infection radius:",xy=(0.03,0.85),fontsize=10)
+        info.annotate(self.infection_radius,xy=(0.8,0.85),fontsize=10)
+        #info of probability of infection
+        info.annotate("#Probability of infection:",xy=(0.03,0.6),fontsize=10)
+        info.annotate(self.probability_of_infection,xy=(0.8,0.6),fontsize=10)
+        #info of incubation period
+        info.annotate("#Incubation period:",xy=(0.03,0.36),fontsize=10)
+        info.annotate(self.incubation_period,xy=(0.8,0.36),fontsize=10)
         # info of the infection duration
-        info.annotate("#infection duration:",xy=(0.03,0.85),fontsize=10)
-        info.annotate(self.infection_duration,xy=(0.8,0.85),fontsize=10)
-        # info of the social distance factor
-        info.annotate("#social distance factor:",xy=(0.03,0.63),fontsize=10)
-        info.annotate(self.social_distance_factor,xy=(0.8,0.63),fontsize=10)
-        # info of the travel rate
-        info.annotate("#travel rate:",xy=(0.03,0.4),fontsize=10)
-        info.annotate(self.travel_rate,xy=(0.8,0.4),fontsize=10)
+        info.annotate("#Infection duration:",xy=(0.03,0.1),fontsize=10)
+        info.annotate(self.infection_duration,xy=(0.8,0.1),fontsize=10)
         
-        #info of the probability of social distancing
-        info.annotate("#Probability of \nsocial distancing:",xy=(0.03,0.05),fontsize=10)
-        info.annotate(self.probability_of_social_distancing,xy=(0.8,0.05),fontsize=10)
         
         info_2 = plt.subplot(5,3,14)
         plt.tick_params(length=0,labelsize=0)
-        
-        #info of infection radius
-        info_2.annotate("#Infection radius:",xy=(0.03,0.85),fontsize=10)
-        info_2.annotate(self.infection_radius,xy=(0.8,0.85),fontsize=10)
-        
-        #info of probability of infection
-        info_2.annotate("#Probability of infection:",xy=(0.03,0.6),fontsize=10)
-        info_2.annotate(self.probability_of_infection,xy=(0.8,0.6),fontsize=10)
-        
-        #info of incubation period
-        info_2.annotate("#Incubation period:",xy=(0.03,0.36),fontsize=10)
-        info_2.annotate(self.incubation_period,xy=(0.8,0.36),fontsize=10)
-        
+        # info of the travel rate
+        info_2.annotate("#Travel rate:",xy=(0.03,0.85),fontsize=10)
+        info_2.annotate(self.travel_rate,xy=(0.8,0.85),fontsize=10)
+        # info of the social distance factor
+        info_2.annotate("#Social distance factor:",xy=(0.03,0.67),fontsize=10)
+        info_2.annotate(self.social_distance_factor,xy=(0.8,0.67),fontsize=10)
+        #info of the percentage of social distancing
+        info_2.annotate("#Percentage of \nsocial distancing:",xy=(0.03,0.3),fontsize=10)
+        info_2.annotate(self.probability_of_social_distancing,xy=(0.8,0.3),fontsize=10)
         #info of trigger case
         info_2.annotate("#Trigger case:",xy=(0.03,0.1),fontsize=10)
         info_2.annotate(self.trigger_case,xy=(0.8,0.1),fontsize=10)
-        
+
+
         info_3 = plt.subplot(5,3,15)
         plt.tick_params(length=0,labelsize=0)
-        
         #info of trigger case
-        info_3.annotate("#Percentage of no symptom:",xy=(0.03,0.6),fontsize=10)
-        info_3.annotate(self.percentage_of_no_symptom,xy=(0.8,0.6),fontsize=10)
-        
+        info_3.annotate("#Percentage of no symptom:",xy=(0.03,0.8),fontsize=10)
+        info_3.annotate(self.percentage_of_no_symptom,xy=(0.8,0.8),fontsize=10)
         #info of Quarantine mode
-        info_3.annotate("#Quarantine mode:",xy=(0.03,0.4),fontsize=10)
-        info_3.annotate(self.quarantine_mode,xy=(0.8,0.4),fontsize=10)
+        info_3.annotate("#Quarantine mode:",xy=(0.03,0.5),fontsize=10)
+        info_3.annotate(self.quarantine_mode,xy=(0.8,0.5),fontsize=10)
+        #info of Quarantine mode
+        info_3.annotate("#Percentage of quarantine:",xy=(0.03,0.2),fontsize=10)
+        info_3.annotate(self.percentage_of_quarantine,xy=(0.8,0.2),fontsize=10)
+        
+        
+        # Initiate the plot
+        self.plot_fig, self.plot_ax = plt.subplots(figsize=(8,5))
+        self.plot_ax.set_title("Real-world Time - Percentage of Population", fontweight= "bold", fontsize= 16)
+        self.plot_ax.set_xlabel("Real-world Time (days)", fontsize= 12)
+        self.plot_ax.set_ylabel("Percentage of Population", fontsize= 12)
+        self.plot_ax.set_prop_cycle(color= ['blue', 'red', 'gray', 'orange'])
+        self.plot_ax.set_xlim(0, auto= True)
+        self.plot_ax.set_ylim(0, 1)
+        # Parameter
+        real_world_time = self.time / 0.2
+        percentage_of_S = self.get_status_count()[0] / self.totol_people
+        percentage_of_I = self.get_status_count()[1] / self.totol_people
+        percentage_of_R = self.get_status_count()[3] / self.totol_people
+        percentage_of_accumulated_cases = percentage_of_I + percentage_of_R
+        # time axis (x axis)
+        self.real_world_time_list.append(real_world_time)
+        # y axis (number of people)
+        self.percentage_S_list.append(percentage_of_S)
+        self.percentage_I_list.append(percentage_of_I)
+        self.percentage_R_list.append(percentage_of_R)
+        self.percentage_accum_cases_list.append(percentage_of_accumulated_cases)
+        self.plot_ax.plot(self.real_world_time_list, self.percentage_S_list, label= "Susceptible")
+        self.plot_ax.plot(self.real_world_time_list, self.percentage_I_list, label= "Infectious")
+        self.plot_ax.plot(self.real_world_time_list, self.percentage_R_list, label= "Removed")
+        self.plot_ax.plot(self.real_world_time_list, self.percentage_accum_cases_list, label= "Accumulated cases")
+        self.plot_ax.legend()
+        
         
         '''
-        # Initiate the stacked area plot
-        self.time_list = []
-        self.num_S_list = np.zeros(0)
-        self.num_I_list = np.zeros(0)
-        self.num_R_list = np.zeros(0)
-        stack_fig = plt.figure(figsize=(8,5))
-        # time axis (x axis)
-        self.time_list.append(self.time)
-        # y axis (number of people)
-        self.num_S_list = np.append(self.num_S_list, self.get_status_count()[0])
-        self.num_I_list = np.append(self.num_I_list, self.get_status_count()[1])
-        self.num_R_list = np.append(self.num_R_list, self.get_status_count()[2])
-        self.num_of_individuals = np.vstack([self.num_S_list, self.num_I_list, self.num_R_list])
-        stack_plot = plt.stackplot(x= self.time_list, y1= self.num_S_list, y2= self.num_I_list, y3= self.num_R_list,
+        stack_plot = plt.plot(x= self.time_list, y= self.percentage_of_individuals,
         labels= ["Susceptible", "Infectious", "Removed"], colors= ["blue", "red", "grey"], baseline='zero')
         '''
+
         self.time_label = time_label
         self.R_label = R_label
+        self.Days = Days
         self.fig = fig
         self.city_plot = city_plot
         self.group_plot = group_plot
+
+
         '''
-        self.stack_plot = stack_plot
         self.stack_fig = stack_fig
+        self.stack_plot = stack_plot
         '''
         return self.fig, self.city_plot, self.group_plot, self.R_label, self.time_label
         
@@ -519,6 +548,25 @@ class RunSimpleSimulation(SIRSimulation):
             self.group_plot[city+1]["R"].set_offsets(self.particles[city+1]["R"])
         
         
+        # Collect the population list.
+        real_world_time = self.time / 0.2
+        percentage_of_S = self.get_status_count()[0] / self.totol_people
+        percentage_of_I = self.get_status_count()[1] / self.totol_people
+        percentage_of_R = self.get_status_count()[3] / self.totol_people
+        percentage_of_accumulated_cases = percentage_of_I + percentage_of_R
+        # time axis (x axis)
+        self.real_world_time_list.append(real_world_time)
+        # y axis (number of people)
+        self.percentage_S_list.append(percentage_of_S)
+        self.percentage_I_list.append(percentage_of_I)
+        self.percentage_R_list.append(percentage_of_R)
+        self.percentage_accum_cases_list.append(percentage_of_accumulated_cases)
+        self.plot_ax.plot(self.real_world_time_list, self.percentage_S_list, label= "Susceptible")
+        self.plot_ax.plot(self.real_world_time_list, self.percentage_I_list, label= "Infectious")
+        self.plot_ax.plot(self.real_world_time_list, self.percentage_R_list, label= "Removed")
+        self.plot_ax.plot(self.real_world_time_list, self.percentage_accum_cases_list, label= "Accumulated cases")
+
+
         '''
         # Update stacked area plot
         # time axis (x axis)
@@ -531,18 +579,23 @@ class RunSimpleSimulation(SIRSimulation):
         
         self.stack_plot.set_data(x= self.time_list, y1= self.num_S_list, y2= self.num_I_list, y3= self.num_R_list)
         '''
+
         # If number of infected people is zero, stop the simulation.
         if (self.get_status_count()[1] + self.get_status_count()[2]) == 0:
             self.anim.event_source.stop()
-        
+            self.plot_anim.event_source.stop()
+
+
+        self.update_time()
         self.update_statuses()
-        self.update_R_label()
+        self.add_R_label()
         self.R_label.set_text(round(self.effect_reproduction_num,1))
+        self.Days.set_text(int(self.boxes[1][1].time/0.2))
         self.time_label.set_text(round(self.boxes[1][1].time,1))
-        self.S_displayer.set_text(self.get_status_count()[0])
-        self.I_displayer.set_text(self.get_status_count()[1])
-        self.A_displayer.set_text(self.get_status_count()[2])
-        self.R_displayer.set_text(self.get_status_count()[3])
+        self.S_displayer.set_text(int(self.get_status_count()[0]))
+        self.I_displayer.set_text(int(self.get_status_count()[1]))
+        self.A_displayer.set_text(int(self.get_status_count()[2]))
+        self.R_displayer.set_text(int(self.get_status_count()[3]))
         
         self.S_percent.set_text('{:.0%}'.format(self.get_status_count()[0]/(self.totol_people)))
         self.I_percent.set_text('{:.0%}'.format(self.get_status_count()[1]/(self.totol_people)))
@@ -552,7 +605,7 @@ class RunSimpleSimulation(SIRSimulation):
         return self.group_plot,
     
     
-    def update_R_label(self):
+    def add_R_label(self):
         update_period = 1
         all_R0_values = []
         
@@ -581,6 +634,7 @@ class RunSimpleSimulation(SIRSimulation):
     
 
     def show(self):
+        self.fig.savefig("Simulation Animation")
         plt.show()
             
 
