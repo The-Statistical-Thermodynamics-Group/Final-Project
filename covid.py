@@ -263,7 +263,7 @@ class SIRSimulation(Person):
                 if random.random() < self.travel_rate:
                     # dest for destination
                     dest = round(self.n_cities*random.random()) - 1
-                    traveler = round(len(city)*random.random())
+                    traveler = random.randint(0, self.n_cities - 1)
                     self.boxes[dest].append(city[traveler])
                     del city[traveler] # need to make sure what del_count exactly do then add it
         
@@ -313,6 +313,7 @@ class RunSimpleSimulation(SIRSimulation):
         self.percentage_accum_cases_list = []
 
         self.setup()
+        self.finish_i = 1
         self.anim = animation.FuncAnimation(self.fig, func= self.run_until_zero_infection, interval = 100)
         self.plot_anim = animation.FuncAnimation(self.plot_fig, func= self.run_until_zero_infection, interval = 100)
         
@@ -401,8 +402,8 @@ class RunSimpleSimulation(SIRSimulation):
         group_area.annotate("Infectious:",xy=(0.05,0.67),fontsize=10)
         self.I_displayer = group_area.annotate(self.get_status_count()[1],xy=(0.6,0.67),fontsize=10)
         self.I_percent = group_area.annotate('{:.0%}'.format(percentage_of_I),xy=(0.8,0.67),fontsize=10)
-         # the current percentage of asymptotic population
-        group_area.annotate("Asymptotic:",xy=(0.05,0.45),fontsize=10)
+         # the current percentage of asymptomatic population
+        group_area.annotate("Asymptomatic:",xy=(0.05,0.45),fontsize=10)
         self.A_displayer = group_area.annotate(self.get_status_count()[2],xy=(0.6,0.45),fontsize=10)
         self.A_percent = group_area.annotate('{:.0%}'.format(percentage_of_A),xy=(0.8,0.45),fontsize=10)
         # the current percentage of removed population
@@ -457,10 +458,16 @@ class RunSimpleSimulation(SIRSimulation):
         info_3.annotate("#Percentage of quarantine:",xy=(0.03,0.2),fontsize=10)
         info_3.annotate(self.percentage_of_quarantine,xy=(0.8,0.2),fontsize=10)
         
+
+        # Initiate the reproduction number for the highest percentage of infection
+        self.time_referral = real_world_time
+        self.highest_percentage_of_I = percentage_of_I
+        self.R_value = self.effect_reproduction_num
+
         
         # Initiate the percentage of population to real-world time plot.
         self.plot_fig, self.plot_ax = plt.subplots(figsize=(8,5))
-        self.plot_ax.set_title("Real-world Time - Percentage of Population", fontweight= "bold", fontsize= 16)
+        self.plot_ax.set_title("Real-world Time - Percentage of Population", fontweight= "bold", fontsize= 14)
         self.plot_ax.set_xlabel("Real-world Time (days)", fontsize= 12)
         self.plot_ax.set_ylabel("Percentage of Population", fontsize= 12)
         self.plot_ax.set_prop_cycle(color= ['blue', 'red', 'gray', 'orange'])
@@ -477,6 +484,7 @@ class RunSimpleSimulation(SIRSimulation):
         self.plot_ax.plot(self.real_world_time_list, self.percentage_I_list, label= "Infectious")
         self.plot_ax.plot(self.real_world_time_list, self.percentage_R_list, label= "Removed")
         self.plot_ax.plot(self.real_world_time_list, self.percentage_accum_cases_list, label= "Accumulated cases")
+        #self.plot_ax.text(self.time_referral, self.highest_percentage_of_I, "R = %d" %self.R_value)
         self.plot_ax.legend()
         
         
@@ -555,6 +563,13 @@ class RunSimpleSimulation(SIRSimulation):
             self.group_plot[city+1]["A"].set_offsets(self.particles[city+1]["A"])
             self.group_plot[city+1]["R"].set_offsets(self.particles[city+1]["R"])
         
+
+        # Find out the reproduction number for the highest percentage of infection
+        if percentage_of_I > self.highest_percentage_of_I:
+            self.time_referral = real_world_time
+            self.R_value = self.effect_reproduction_num
+            self.highest_percentage_of_I = percentage_of_I
+
         
         # Show the percentage of population to real-world time plot.
         # time axis (x axis)
@@ -585,8 +600,12 @@ class RunSimpleSimulation(SIRSimulation):
 
         # If number of infected people is zero, stop the simulation.
         if (self.get_status_count()[1] + self.get_status_count()[2]) == 0:
-            self.anim.event_source.stop()
-            self.plot_anim.event_source.stop()
+            self.plot_ax.text(self.time_referral, self.highest_percentage_of_I + 0.02, "R = %0.2f" % self.R_value)
+            if self.finish_i == 2:
+                self.anim.event_source.stop()
+                self.plot_anim.event_source.stop()
+                pass
+            self.finish_i += 1
 
 
         print("status[S, I, A, R]", self.get_status_count())
