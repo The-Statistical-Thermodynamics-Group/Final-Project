@@ -17,7 +17,7 @@ class Person(object):
     "wander_step_duration": 1,
     "gravity_well": None,
     "gravity_strength": 1,
-    "social_distance_factor": 1,
+    "social_distance_factor": np.sqrt(0.5),
     "probability_of_social_distancing": 0.7,
     "n_repulsion_points":10,
     "wall_buffer": 1,
@@ -437,7 +437,7 @@ class RunSimpleSimulation(SIRSimulation):
         info_2.annotate(self.travel_rate,xy=(0.8,0.85),fontsize=10)
         # info of the social distance factor
         info_2.annotate("#Social distance factor:",xy=(0.03,0.67),fontsize=10)
-        info_2.annotate(self.social_distance_factor,xy=(0.8,0.67),fontsize=10)
+        info_2.annotate('{:.3f}'.format(self.social_distance_factor),xy=(0.8,0.67),fontsize=10)
         #info of the percentage of social distancing
         info_2.annotate("#Percentage of \nsocial distancing:",xy=(0.03,0.3),fontsize=10)
         info_2.annotate(self.probability_of_social_distancing,xy=(0.8,0.3),fontsize=10)
