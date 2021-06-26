@@ -277,7 +277,6 @@ class SIRSimulation(Person):
                         person.repulsion_points = repelled_points[np.argsort(diffs)[1:person.n_repulsion_points + 1]]
     
 
-
     def get_status_count(self):
         status_counter = np.zeros(4)
         for city in self.boxes:
@@ -585,7 +584,7 @@ class RunSimpleSimulation(SIRSimulation):
             self.anim.event_source.stop()
             self.plot_anim.event_source.stop()
 
-        
+
         print("status[S, I, A, R]", self.get_status_count())
         return self.group_plot,
     
