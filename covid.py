@@ -157,7 +157,7 @@ class SIRSimulation(Person):
         "city_pop": 100, #the population in each city
         "box_size": 10, #the size of each city(box)
         "travel_rate": 0.3, #decide how much people in the city will travel
-        "trigger_case": 30,
+        "trigger_case_rate": 0.05,
         "percentage_of_no_symptom": 0.2,
         "quarantine_mode": False,
         "percentage_of_quarantine": 0.7,
@@ -170,9 +170,10 @@ class SIRSimulation(Person):
         self.row_cities=self.CONFIG["row_cities"]
         self.col_cities=self.CONFIG["col_cities"]
         self.city_pop=self.CONFIG["city_pop"]
+        self.total_people = self.n_cities * self.city_pop
         self.box_size=self.CONFIG["box_size"]
         self.travel_rate=self.CONFIG["travel_rate"]
-        self.trigger_case = self.CONFIG["trigger_case"]
+        self.trigger_case_rate = self.CONFIG["trigger_case_rate"]
         self.num_of_total_infected = self.CONFIG["num_of_total_infected"]
         self.percentage_of_no_symptom = self.CONFIG["percentage_of_no_symptom"]
         self.percentage_of_quarantine = self.CONFIG["percentage_of_quarantine"]
@@ -267,7 +268,7 @@ class SIRSimulation(Person):
                     del city[traveler] # need to make sure what del_count exactly do then add it
         
         #social distancing
-        if self.CONFIG["num_of_total_infected"] > self.trigger_case:
+        if self.CONFIG["num_of_total_infected"] > self.trigger_case_rate * self.total_people:
             for city in self.boxes:
                 points = np.array([person.point for person in city])
                 repelled_points = points
@@ -317,7 +318,13 @@ class RunSimpleSimulation(SIRSimulation):
         
         
     def setup(self):
-        self.totol_people = self.get_status_count()[0]+self.get_status_count()[1]+self.get_status_count()[3]
+        # Record the current and percentage of population.
+        real_world_time = self.time / 0.2
+        percentage_of_S = self.get_status_count()[0] / self.total_people
+        percentage_of_I = self.get_status_count()[1] / self.total_people
+        percentage_of_A = self.get_status_count()[2] / self.total_people
+        percentage_of_R = self.get_status_count()[3] / self.total_people
+        percentage_of_accumulated_cases = percentage_of_I + percentage_of_R
 
 
         for city in range(self.n_cities):
@@ -341,7 +348,7 @@ class RunSimpleSimulation(SIRSimulation):
         # Scatter plot
         self.city_plot = dict()
         self.group_plot = dict()
-        self.fig = plt.figure()
+        self.fig = plt.figure(figsize=(12, 7))
         for city in range(self.n_cities):
             self.city_plot[city+1] = plt.subplot(5,3,city+1)
             self.city_plot[city+1].set_xlim(left=0,right=self.box_size)
@@ -374,7 +381,7 @@ class RunSimpleSimulation(SIRSimulation):
             self.quarantine_scatter["R"] = quarantine_plot.scatter(self.Q_particles["R"][:,0], self.Q_particles["R"][:,1], color = "grey")
         
 
-       # Show the result info
+        # Show the result info
         tex = plt.subplot(5,3,10)
         plt.tick_params(length=0,labelsize=0)
         tex.annotate("Time in code:",xy=(0.1,0.76),fontsize=14)
@@ -389,19 +396,19 @@ class RunSimpleSimulation(SIRSimulation):
         # the current percentage of suceptible population
         group_area.annotate("Susceptible:",xy=(0.05,0.85),fontsize=10)
         self.S_displayer = group_area.annotate(self.get_status_count()[0],xy=(0.6,0.85),fontsize=10)
-        self.S_percent = group_area.annotate('{:.0%}'.format(self.get_status_count()[0]/(self.totol_people)),xy=(0.8,0.85),fontsize=10)
+        self.S_percent = group_area.annotate('{:.0%}'.format(percentage_of_S),xy=(0.8,0.85),fontsize=10)
         # the current percentage of infectious population
         group_area.annotate("Infectious:",xy=(0.05,0.67),fontsize=10)
         self.I_displayer = group_area.annotate(self.get_status_count()[1],xy=(0.6,0.67),fontsize=10)
-        self.I_percent = group_area.annotate('{:.0%}'.format(self.get_status_count()[1]/(self.totol_people)),xy=(0.8,0.67),fontsize=10)
+        self.I_percent = group_area.annotate('{:.0%}'.format(percentage_of_I),xy=(0.8,0.67),fontsize=10)
          # the current percentage of asymptotic population
         group_area.annotate("Asymptotic:",xy=(0.05,0.45),fontsize=10)
         self.A_displayer = group_area.annotate(self.get_status_count()[2],xy=(0.6,0.45),fontsize=10)
-        self.A_percent = group_area.annotate('{:.0%}'.format(self.get_status_count()[2]/(self.totol_people)),xy=(0.8,0.45),fontsize=10)
+        self.A_percent = group_area.annotate('{:.0%}'.format(percentage_of_A),xy=(0.8,0.45),fontsize=10)
         # the current percentage of removed population
         group_area.annotate("Removed:",xy=(0.05,0.25),fontsize=10)
         self.R_displayer = group_area.annotate(self.get_status_count()[3],xy=(0.6,0.25),fontsize=10)
-        self.R_percent = group_area.annotate('{:.0%}'.format(self.get_status_count()[3]/(self.totol_people)),xy=(0.8,0.25),fontsize=10)
+        self.R_percent = group_area.annotate('{:.0%}'.format(percentage_of_R),xy=(0.8,0.25),fontsize=10)
         
         
         # Show the CONFIG info
@@ -434,24 +441,24 @@ class RunSimpleSimulation(SIRSimulation):
         info_2.annotate("#Percentage of \nsocial distancing:",xy=(0.03,0.3),fontsize=10)
         info_2.annotate(self.probability_of_social_distancing,xy=(0.8,0.3),fontsize=10)
         #info of trigger case
-        info_2.annotate("#Trigger case:",xy=(0.03,0.1),fontsize=10)
-        info_2.annotate(self.trigger_case,xy=(0.8,0.1),fontsize=10)
+        info_2.annotate("#Trigger case rate:",xy=(0.03,0.1),fontsize=10)
+        info_2.annotate(self.trigger_case_rate,xy=(0.8,0.1),fontsize=10)
 
         # conditional info block 3
         info_3 = plt.subplot(5,3,15)
         plt.tick_params(length=0,labelsize=0)
         #info of trigger case
-        info_3.annotate("#Percentage of no symptom:",xy=(0.03,0.8),fontsize=8)
+        info_3.annotate("#Percentage of no symptom:",xy=(0.03,0.8),fontsize=10)
         info_3.annotate(self.percentage_of_no_symptom,xy=(0.8,0.8),fontsize=10)
         #info of Quarantine mode
         info_3.annotate("#Quarantine mode:",xy=(0.03,0.5),fontsize=10)
         info_3.annotate(self.quarantine_mode,xy=(0.8,0.5),fontsize=10)
         #info of Quarantine mode
-        info_3.annotate("#Percentage of quarantine:",xy=(0.03,0.2),fontsize=8)
+        info_3.annotate("#Percentage of quarantine:",xy=(0.03,0.2),fontsize=10)
         info_3.annotate(self.percentage_of_quarantine,xy=(0.8,0.2),fontsize=10)
         
         
-        # Initiate the population percentage plot
+        # Initiate the percentage of population to real-world time plot.
         self.plot_fig, self.plot_ax = plt.subplots(figsize=(8,5))
         self.plot_ax.set_title("Real-world Time - Percentage of Population", fontweight= "bold", fontsize= 16)
         self.plot_ax.set_xlabel("Real-world Time (days)", fontsize= 12)
@@ -459,12 +466,6 @@ class RunSimpleSimulation(SIRSimulation):
         self.plot_ax.set_prop_cycle(color= ['blue', 'red', 'gray', 'orange'])
         self.plot_ax.set_xlim(0, auto= True)
         self.plot_ax.set_ylim(0, 1)
-        # Parameter
-        real_world_time = self.time / 0.2
-        percentage_of_S = self.get_status_count()[0] / self.totol_people
-        percentage_of_I = self.get_status_count()[1] / self.totol_people
-        percentage_of_R = self.get_status_count()[3] / self.totol_people
-        percentage_of_accumulated_cases = percentage_of_I + percentage_of_R
         # time axis (x axis)
         self.real_world_time_list.append(real_world_time)
         # y axis (number of people)
@@ -487,23 +488,31 @@ class RunSimpleSimulation(SIRSimulation):
         
     
     def run_until_zero_infection(self, frame):
+        # Record the current and percentage of population.
+        real_world_time = self.time / 0.2
+        percentage_of_S = self.get_status_count()[0] / self.total_people
+        percentage_of_I = self.get_status_count()[1] / self.total_people
+        percentage_of_A = self.get_status_count()[2] / self.total_people
+        percentage_of_R = self.get_status_count()[3] / self.total_people
+        percentage_of_accumulated_cases = percentage_of_I + percentage_of_R
+
         # update the state
         self.update_time()
         self.update_statuses()
         self.add_R_label()
-        self.R_label.set_text(round(self.effect_reproduction_num,1))
-        self.Days.set_text(int(self.boxes[1][1].time/0.2))
-        self.time_label.set_text(round(self.boxes[1][1].time,1))
+        self.R_label.set_text(round(self.effect_reproduction_num, 1))
+        self.Days.set_text(int(real_world_time))
+        self.time_label.set_text(round(self.boxes[1][1].time, 1))
         self.S_displayer.set_text(int(self.get_status_count()[0]))
         self.I_displayer.set_text(int(self.get_status_count()[1]))
         self.A_displayer.set_text(int(self.get_status_count()[2]))
         self.R_displayer.set_text(int(self.get_status_count()[3]))
         
-        self.S_percent.set_text('{:.0%}'.format(self.get_status_count()[0]/(self.totol_people)))
-        self.I_percent.set_text('{:.0%}'.format(self.get_status_count()[1]/(self.totol_people)))
-        self.A_percent.set_text('{:.0%}'.format(self.get_status_count()[2]/(self.totol_people)))
-        self.R_percent.set_text('{:.0%}'.format(self.get_status_count()[3]/(self.totol_people)))
-
+        self.S_percent.set_text('{:.0%}'.format(percentage_of_S))
+        self.I_percent.set_text('{:.0%}'.format(percentage_of_I))
+        self.A_percent.set_text('{:.0%}'.format(percentage_of_A))
+        self.R_percent.set_text('{:.0%}'.format(percentage_of_R))
+        
 
         for city in range(self.n_cities):
             self.particles[city+1] = dict()
@@ -547,12 +556,7 @@ class RunSimpleSimulation(SIRSimulation):
             self.group_plot[city+1]["R"].set_offsets(self.particles[city+1]["R"])
         
         
-        # Collect the population list for plot.
-        real_world_time = self.time / 0.2
-        percentage_of_S = self.get_status_count()[0] / self.totol_people
-        percentage_of_I = self.get_status_count()[1] / self.totol_people
-        percentage_of_R = self.get_status_count()[3] / self.totol_people
-        percentage_of_accumulated_cases = percentage_of_I + percentage_of_R
+        # Show the percentage of population to real-world time plot.
         # time axis (x axis)
         self.real_world_time_list.append(real_world_time)
         # y axis (number of people)
