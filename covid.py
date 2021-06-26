@@ -170,14 +170,14 @@ class SIRSimulation(Person):
         self.row_cities=self.CONFIG["row_cities"]
         self.col_cities=self.CONFIG["col_cities"]
         self.city_pop=self.CONFIG["city_pop"]
-        self.total_people = self.n_cities * self.city_pop
+        self.total_population = self.n_cities * self.city_pop
         self.box_size=self.CONFIG["box_size"]
         self.travel_rate=self.CONFIG["travel_rate"]
         self.trigger_case_rate = self.CONFIG["trigger_case_rate"]
-        self.num_of_total_infected = self.CONFIG["num_of_total_infected"]
         self.percentage_of_no_symptom = self.CONFIG["percentage_of_no_symptom"]
-        self.percentage_of_quarantine = self.CONFIG["percentage_of_quarantine"]
         self.quarantine_mode = self.CONFIG["quarantine_mode"]
+        self.percentage_of_quarantine = self.CONFIG["percentage_of_quarantine"]
+        self.num_of_total_infected = self.CONFIG["num_of_total_infected"]
 
         self.add_box()
         self.add_people()
@@ -268,7 +268,7 @@ class SIRSimulation(Person):
                     del city[traveler] # need to make sure what del_count exactly do then add it
         
         #social distancing
-        if self.CONFIG["num_of_total_infected"] > self.trigger_case_rate * self.total_people:
+        if self.CONFIG["num_of_total_infected"] > self.trigger_case_rate * self.total_population:
             for city in self.boxes:
                 points = np.array([person.point for person in city])
                 repelled_points = points
@@ -320,10 +320,10 @@ class RunSimpleSimulation(SIRSimulation):
     def setup(self):
         # Record the current and percentage of population.
         real_world_time = self.time / 0.2
-        percentage_of_S = self.get_status_count()[0] / self.total_people
-        percentage_of_I = self.get_status_count()[1] / self.total_people
-        percentage_of_A = self.get_status_count()[2] / self.total_people
-        percentage_of_R = self.get_status_count()[3] / self.total_people
+        percentage_of_S = self.get_status_count()[0] / self.total_population
+        percentage_of_I = self.get_status_count()[1] / self.total_population
+        percentage_of_A = self.get_status_count()[2] / self.total_population
+        percentage_of_R = self.get_status_count()[3] / self.total_population
         percentage_of_accumulated_cases = percentage_of_I + percentage_of_R
 
 
@@ -490,10 +490,10 @@ class RunSimpleSimulation(SIRSimulation):
     def run_until_zero_infection(self, frame):
         # Record the current and percentage of population.
         real_world_time = self.time / 0.2
-        percentage_of_S = self.get_status_count()[0] / self.total_people
-        percentage_of_I = self.get_status_count()[1] / self.total_people
-        percentage_of_A = self.get_status_count()[2] / self.total_people
-        percentage_of_R = self.get_status_count()[3] / self.total_people
+        percentage_of_S = self.get_status_count()[0] / self.total_population
+        percentage_of_I = self.get_status_count()[1] / self.total_population
+        percentage_of_A = self.get_status_count()[2] / self.total_population
+        percentage_of_R = self.get_status_count()[3] / self.total_population
         percentage_of_accumulated_cases = percentage_of_I + percentage_of_R
 
         # update the state
