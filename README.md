@@ -48,5 +48,5 @@ Initialized parameters:
 ## Conclusion
 The precedence of these precautions from highest to lowest:
 1. **Wearing masks** and **quaratine**
-2. **Larger social distance** and **the percentage of people following social distancing**
+2. **Larger social distance** and **percentage of people following social distancing**
 3. **Reducing travel rate**
