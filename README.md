@@ -1,14 +1,14 @@
 # The Effectiveness of Various Precautions for Pandemics
 
 ## Motivation
-Test the effectiveness of various precautions for pandemics such as wearing masks, social distancing, quarantine, and so on. See how effective these preventive measures is. Find a best way to control the pandemic.
+Test the effectiveness of various precautions for pandemics such as wearing masks, social distancing, quarantine, and so on. See how effective these preventive measures is and find a best way to control the pandemic.
 
 ## Model
 ### SIR Model
 There are three kinds of people in model.
 - Susceptible (S): blue color
 - Infectious (I): red color
-- Recovered or Removed (died) (R): gray color\
+- Recovered or Removed (died) (R): gray color
 
 Initialized parameters:
 - `infection_radius` = 0.5
