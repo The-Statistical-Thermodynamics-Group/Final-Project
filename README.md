@@ -1,7 +1,9 @@
 # The Effectiveness of Various Precautions for Pandemics
 
 ## Demonstration
-![Pandemic Model Simulation](https://user-images.githubusercontent.com/80250573/200988295-80b9ae4f-7400-4dbd-9dcf-a426756d935f.mp4)
+### Pandemic Model Simulation
+https://user-images.githubusercontent.com/80250573/200988295-80b9ae4f-7400-4dbd-9dcf-a426756d935f.mp4
+### Pandemic Case Track
 ![Pandemic Case Track](https://user-images.githubusercontent.com/80250573/200987910-5f51625e-9f13-4ca6-a599-8a7c5c7ada2f.mp4)
 
 ## Motivation
