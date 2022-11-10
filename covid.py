@@ -643,10 +643,9 @@ class RunSimpleSimulation(SIRSimulation):
 
     def show(self):
         # Save to mp4 using ffmpeg writer
-        writervideo1 = animation.FFMpegWriter(fps=10)
-        writervideo2 = animation.FFMpegWriter(fps=10)
-        self.anim.save("PandemicSimulation.mp4", writer=writervideo1)
-        self.plot_anim.save("PandemicCasesStatistics.mp4", writer=writervideo2)
+        writervideo = animation.FFMpegWriter(fps=10)
+        self.anim.save("PandemicSimulation.mp4", writer=writervideo)
+        self.plot_anim.save("PandemicCasesStatistics.mp4", writer=writervideo)
 
         plt.show()
         plt.close()
