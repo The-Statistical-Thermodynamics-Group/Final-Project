@@ -18,7 +18,7 @@ class Person(object):
     "gravity_well": None,
     "gravity_strength": 1,
     "social_distance_factor": np.sqrt(0.5),
-    "probability_of_social_distancing": 0.7,
+    "probability_of_social_distancing": 0.5,
     "n_repulsion_points":10,
     "wall_buffer": 1,
     "max_speed": 1,
@@ -156,11 +156,11 @@ class SIRSimulation(Person):
         "col_cities": 3, #define the row and column of the cities
         "city_pop": 100, #the population in each city
         "box_size": 10, #the size of each city(box)
-        "travel_rate": 0.3, #decide how much people in the city will travel
-        "trigger_case_rate": 0.05,
+        "travel_rate": 0.7, #decide how much people in the city will travel
+        "trigger_case_rate": 0.2,
         "percentage_of_no_symptom": 0.2,
-        "quarantine_mode": False,
-        "percentage_of_quarantine": 0.7,
+        "quarantine_mode": True,
+        "percentage_of_quarantine": 0.5,
         "num_of_total_infected":0,
     }
 
@@ -313,9 +313,11 @@ class RunSimpleSimulation(SIRSimulation):
         self.percentage_accum_cases_list = []
 
         self.setup()
-        self.finish_i = 1
+        self.finish_i = False
         self.anim = animation.FuncAnimation(self.fig, func= self.run_until_zero_infection, interval = 100)
         self.plot_anim = animation.FuncAnimation(self.plot_fig, func= self.run_until_zero_infection, interval = 100)
+
+        
         
         
     def setup(self):
@@ -395,19 +397,19 @@ class RunSimpleSimulation(SIRSimulation):
         group_area = plt.subplot(5,3,11)
         plt.tick_params(length=0,labelsize=0)
         # the current percentage of suceptible population
-        group_area.annotate("Susceptible:",xy=(0.05,0.85),fontsize=10)
+        group_area.annotate("Susceptible (blue):",xy=(0.05,0.85),fontsize=10)
         self.S_displayer = group_area.annotate(self.get_status_count()[0],xy=(0.6,0.85),fontsize=10)
         self.S_percent = group_area.annotate('{:.0%}'.format(percentage_of_S),xy=(0.8,0.85),fontsize=10)
         # the current percentage of infectious population
-        group_area.annotate("Infectious:",xy=(0.05,0.67),fontsize=10)
+        group_area.annotate("Infectious (red):",xy=(0.05,0.67),fontsize=10)
         self.I_displayer = group_area.annotate(self.get_status_count()[1],xy=(0.6,0.67),fontsize=10)
         self.I_percent = group_area.annotate('{:.0%}'.format(percentage_of_I),xy=(0.8,0.67),fontsize=10)
          # the current percentage of asymptomatic population
-        group_area.annotate("Asymptomatic:",xy=(0.05,0.45),fontsize=10)
+        group_area.annotate("Asymptomatic (YL):",xy=(0.05,0.45),fontsize=10)
         self.A_displayer = group_area.annotate(self.get_status_count()[2],xy=(0.6,0.45),fontsize=10)
         self.A_percent = group_area.annotate('{:.0%}'.format(percentage_of_A),xy=(0.8,0.45),fontsize=10)
         # the current percentage of removed population
-        group_area.annotate("Removed:",xy=(0.05,0.25),fontsize=10)
+        group_area.annotate("Removed (gray):",xy=(0.05,0.25),fontsize=10)
         self.R_displayer = group_area.annotate(self.get_status_count()[3],xy=(0.6,0.25),fontsize=10)
         self.R_percent = group_area.annotate('{:.0%}'.format(percentage_of_R),xy=(0.8,0.25),fontsize=10)
         
@@ -599,17 +601,16 @@ class RunSimpleSimulation(SIRSimulation):
         '''
 
         # If number of infected people is zero, stop the simulation.
-        if (self.get_status_count()[1] + self.get_status_count()[2]) == 0:
+        if (self.get_status_count()[1]) <= 0:
             self.plot_ax.text(self.time_referral, self.highest_percentage_of_I + 0.02, "R = %0.2f" % self.R_value)
-            if self.finish_i == 2:
-                self.anim.event_source.stop()
-                self.plot_anim.event_source.stop()
-                pass
-            self.finish_i += 1
+            
+            # Stop animation.
+            self.anim.event_source.stop()
+            self.plot_anim.event_source.stop()
+                
 
-
-        print("status[S, I, A, R]", self.get_status_count())
-        return self.group_plot,
+        #print("status[S, I, A, R]", self.get_status_count())
+        return self.group_plot
     
     
     def add_R_label(self):
@@ -641,7 +642,15 @@ class RunSimpleSimulation(SIRSimulation):
     
 
     def show(self):
+        # Save to mp4 using ffmpeg writer
+        writervideo1 = animation.FFMpegWriter(fps=10)
+        writervideo2 = animation.FFMpegWriter(fps=10)
+        self.anim.save("PandemicSimulation.mp4", writer=writervideo1)
+        self.plot_anim.save("PandemicCasesStatistics.mp4", writer=writervideo2)
+
         plt.show()
+        plt.close()
+        
             
 
 sim = RunSimpleSimulation()
