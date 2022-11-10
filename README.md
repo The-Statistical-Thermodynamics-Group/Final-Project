@@ -1,5 +1,9 @@
 # The Effectiveness of Various Precautions for Pandemics
 
+## Demonstration
+![Pandemic Simulation](https://user-images.githubusercontent.com/80250573/200987910-5f51625e-9f13-4ca6-a599-8a7c5c7ada2f.mp4)
+![Pandemic Case Track](https://user-images.githubusercontent.com/80250573/200988045-742df714-3ac9-4f6c-8688-dcfe94a14be6.mp4)
+
 ## Motivation
 Test the effectiveness of various precautions for pandemics such as wearing masks, social distancing, quarantine, and so on. See how effective these preventive measures is and find a best way to control the pandemic.
 
